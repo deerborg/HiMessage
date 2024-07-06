@@ -14,6 +14,9 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Collections;
@@ -94,6 +97,36 @@ class UserServiceImplTest {
 
         assertNotNull(result);
         assertEquals(username, result.getUsername());
+    }
+
+    @Test
+    void Should_Success_When_GetAuthenticatedUserId(){
+        Authentication authentication = Mockito.mock(Authentication.class);
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+
+        SecurityContextHolder.setContext(securityContext);
+
+        Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
+        Mockito.when(authentication.getName()).thenReturn("username");
+
+        User user = new User();
+        user.setUsername("username");
+        user.setRoles(Collections.singletonList(Role.USER));
+        user.setPassword("password");
+        user.setId(UUID.randomUUID().toString());
+
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        Mockito.when(userMapper.toUserResponse(user)).thenReturn(response);
+
+        Mockito.when(userRepository.findByUsername("username")).thenReturn(Optional.of(user));
+
+        ResponseEntity<UserResponse> result = userService.getAuthenticatedUserId();
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+
+        Mockito.verify(userRepository,Mockito.times(1)).findByUsername("username");
+        Mockito.verify(userMapper,Mockito.times(1)).toUserResponse(user);
     }
 
 }

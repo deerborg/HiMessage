@@ -10,6 +10,8 @@ import art.deerborg.hichat.auth.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserByUsername(String username) {
+
         return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException(username));
+    }
+
+    @Override
+    public ResponseEntity<UserResponse> getAuthenticatedUserId() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        UserResponse response = userMapper.toUserResponse(userRepository.findByUsername(authentication.getName()).orElseThrow());
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
